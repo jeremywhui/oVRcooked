@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>oVRcooked!</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<style>
+		body {
+			margin: 0;
+			overflow: hidden;
+			background-color: #505050;
+		}
+	</style>
+</head>
+
+<body>
+
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "https://cdn.jsdelivr.net/npm/three@0.183.1/build/three.module.js",
+					"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.1/examples/jsm/",
+					"cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
+					"cannon-es-debugger": "https://cdn.jsdelivr.net/npm/cannon-es-debugger@1.0.0/dist/cannon-es-debugger.js"
+				}
+			}
+		</script>
+
+	<script type="module">
+
+		delete window.XRWebGLBinding;
+
+		import * as THREE from 'three';
+		import { VRButton } from 'three/addons/webxr/VRButton.js';
+		import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+		import * as CANNON from 'cannon-es';
+        import CannonDebugger from 'cannon-es-debugger';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+		let camera, scene, raycaster, renderer;
+		let controller1, controller2;
+		let controllerGrip1, controllerGrip2;
+
+		let group; // To hold our grabbable objects
+		let kitchen;
+
+		const intersected = [];
+
+		init();
+
+		function init() {
+
+			scene = new THREE.Scene();
+			scene.background = new THREE.Color(0x505050);
+
+			camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
+			camera.position.set(0, 1.6, 3);
+
+			const loader = new GLTFLoader();
+			loader.load('./Kitchen.glb', (gltf) => {
+				kitchen = gltf.scene;
+
+				// 1. Scale the model template  
+				kitchen.scale.set(0.5, 0.5, 0.5);
+
+				// 2. Enable Shadows
+				kitchen.traverse((child) => {
+					if (child.isMesh) {
+						child.castShadow = true;
+					}
+				});
+
+				// 3. Calculate bounding box of the scaled model
+				// const box = new THREE.Box3().setFromObject(kitchen);
+				// const size = new THREE.Vector3();
+				// box.getSize(size);
+
+				console.log("Kitchen Loaded.");
+				scene.add(kitchen)
+			}, undefined, (error) => {
+				console.log("Kitchen.glb not found. Skipping.");
+			});
+
+			// Light
+			scene.add(new THREE.HemisphereLight(0xa5a5a5, 0x898989, 3));
+			const light = new THREE.DirectionalLight(0xffffff, 3);
+			light.position.set(1, 1, 1).normalize();
+			scene.add(light);
+
+			// Interactable Objects Group
+			group = new THREE.Group();
+			scene.add(group);
+
+			raycaster = new THREE.Raycaster();
+
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.setAnimationLoop(animate);
+			renderer.xr.enabled = true;
+
+			document.body.appendChild(renderer.domElement);
+			document.body.appendChild(VRButton.createButton(renderer));
+
+			// controllers
+
+			controller1 = renderer.xr.getController(0);
+			controller1.addEventListener('selectstart', onSelectStart);
+			controller1.addEventListener('selectend', onSelectEnd);
+			scene.add(controller1);
+
+			controller2 = renderer.xr.getController(1);
+			controller2.addEventListener('selectstart', onSelectStart);
+			controller2.addEventListener('selectend', onSelectEnd);
+			scene.add(controller2);
+
+			const controllerModelFactory = new XRControllerModelFactory();
+
+			controllerGrip1 = renderer.xr.getControllerGrip(0);
+			controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+			scene.add(controllerGrip1);
+
+			controllerGrip2 = renderer.xr.getControllerGrip(1);
+			controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+			scene.add(controllerGrip2);
+
+			// Visualize the rays extended from the two controllers
+			const lineGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, - 1)]);
+			const line = new THREE.Line(lineGeometry);
+			line.name = 'line';
+			line.scale.z = 5; // Set the laser length to 5 meters
+
+			// Attach a copy of the laser line to both controllers, 
+			// so that they point to the -Z direction from the controller's perspectives.
+			controller1.add(line.clone());
+			controller2.add(line.clone());
+
+			window.addEventListener('resize', onWindowResize, false);
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+		}
+
+		function onSelectStart(event) {
+			const controller = event.target;
+
+			raycaster.setFromXRController(controller);
+
+			const objectIntersections = raycaster.intersectObjects(group.children, false);
+
+			if (objectIntersections.length > 0) {
+				const object = objectIntersections[0].object;
+				object.material.emissive.b = 1; // Highlight blue
+				controller.attach(object); // Attach to the controller
+				controller.userData.selected = object;
+			}
+
+		}
+
+		function onSelectEnd(event) {
+			const controller = event.target;
+
+			if (controller.userData.selected !== undefined) {
+				const object = controller.userData.selected;
+				object.material.emissive.b = 0; // Remove highlight
+				group.attach(object); // Attach back to the scene group
+				controller.userData.selected = undefined;
+			}
+		}
+
+
+		function getIntersections(controller) {
+			raycaster.setFromXRController(controller);
+			return raycaster.intersectObjects(group.children, false);
+		}
+
+		function intersectObjects(controller) {
+			if (controller.userData.selected !== undefined) return;
+
+			const line = controller.getObjectByName('line');
+			const intersections = getIntersections(controller);
+
+			if (intersections.length > 0) {
+				const intersection = intersections[0];
+				const object = intersection.object;
+				object.material.emissive.r = 1; // Highlight red
+				intersected.push(object);
+				line.scale.z = intersection.distance;
+			} else {
+				line.scale.z = 5;
+			}
+		}
+
+		function cleanIntersected() {
+			while (intersected.length) {
+				const object = intersected.pop();
+				object.material.emissive.r = 0;
+			}
+		}
+
+		function animate() {
+
+			cleanIntersected();
+
+			intersectObjects(controller1);
+			intersectObjects(controller2);
+
+			renderer.render(scene, camera);
+
+		}
+
+	</script>
+</body>
+
+</html>

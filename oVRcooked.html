@@ -45,7 +45,13 @@
 		let group; // To hold our grabbable objects
 		let kitchen;
 
+		const matBounce = new CANNON.Material('bouncy');
+
+		const physicsWorld = new CANNON.World();
+        physicsWorld.gravity.set(0, -9.82, 0);
+
 		const intersected = [];
+		const objects = [];
 
 		init();
 
@@ -55,7 +61,7 @@
 			scene.background = new THREE.Color(0x505050);
 
 			camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
-			camera.position.set(0, 1.6, 3);
+			camera.position.set(0, 2, 3);
 
 			const loader = new GLTFLoader();
 			loader.load('./Kitchen.glb', (gltf) => {
@@ -82,6 +88,19 @@
 				console.log("Kitchen.glb not found. Skipping.");
 			});
 
+			const platformWidth = 3;
+			const platformHeight = 0.3;
+			const platformDepth = 3;
+
+			const platformMesh = new THREE.Mesh(
+				new THREE.BoxGeometry(platformWidth, platformHeight, platformDepth),
+				new THREE.MeshStandardMaterial({ color: 0x3377ff })
+			);
+			platformMesh.position.set(0, 1.5, 0);
+			platformMesh.castShadow = true;
+
+			// scene.add(platformMesh);
+
 			// Light
 			scene.add(new THREE.HemisphereLight(0xa5a5a5, 0x898989, 3));
 			const light = new THREE.DirectionalLight(0xffffff, 3);
@@ -102,6 +121,8 @@
 
 			document.body.appendChild(renderer.domElement);
 			document.body.appendChild(VRButton.createButton(renderer));
+
+			createSphere()
 
 			// controllers
 
@@ -139,6 +160,39 @@
 			window.addEventListener('resize', onWindowResize, false);
 
 		}
+
+		function createSphere() {
+			for (let i = 0; i < 3; i++) {
+				const pos = {
+					x: -0.5 + 0.5 * i,
+					y: 1.4,
+					z: 6
+				};
+
+				// Visual Sphere
+				const radius = 0.1;
+				const sphereMesh = new THREE.Mesh(
+					new THREE.SphereGeometry(radius, 32, 32),
+					new THREE.MeshStandardMaterial({ color: 0xfcf8c8 })
+				);
+				sphereMesh.position.set(pos.x, pos.y, pos.z);
+				sphereMesh.castShadow = true;
+				scene.add(sphereMesh);
+
+				// Physics Body for Sphere
+				const sphereBody = new CANNON.Body({
+					mass: 1,
+					// Need to set to the size of the radius: 0.6 --> radius
+					shape: new CANNON.Sphere(radius),
+					material: matBounce
+				});
+				sphereBody.position.copy(sphereMesh.position);
+				physicsWorld.addBody(sphereBody);
+
+				objects.push({ mesh: sphereMesh, body: sphereBody, type: 'sphere' });
+				group.add(sphereMesh);
+			}
+        }
 
 		function onWindowResize() {
 

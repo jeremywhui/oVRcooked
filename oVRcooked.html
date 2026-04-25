@@ -86,11 +86,10 @@
 		let controllerGrip1, controllerGrip2;
 
 		let group; // To hold our grabbable objects
-		let kitchen, ingredientShelf, workstation, oven, doughBowl; 
-		let rollingPin;
-		let rollingPinHalfExtents;
+		let kitchen, ingredientShelf, workstation, oven, ticketStation; 
+		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = true;
+		let isDebugVisible = false;
 
 		const clock = new THREE.Clock();
 		const loader = new GLTFLoader();
@@ -139,10 +138,16 @@
 				console.log("Kitchen.glb not found. Skipping.");
 			});
 
+			// Load furniture
 			loadIngredientShelf();
-			loadDoughBowl();
 			loadWorkstation();
 			loadOven();
+			loadTicketStation();
+
+			// Create bowls
+			createDoughBowl();
+			createSauceBowl();
+			createCheeseBowl();
 
 			const wallWidth = 10;
 			const wallHeight = 10;
@@ -167,16 +172,6 @@
 			wallBody2.addShape(wallShape2);
 			wallBody2.position.set(0, 1.5, -7.2);
 			physicsWorld.addBody(wallBody2);
-
-			const wallShape3 = new CANNON.Box(new CANNON.Vec3(wallWidth / 2, wallHeight / 2, wallDepth / 2));
-			const wallBody3 = new CANNON.Body({
-				mass: 0,
-				material: matFloor
-			});
-			
-			wallBody3.addShape(wallShape3);
-			wallBody3.position.set(0, 1.5, -7.2);
-			physicsWorld.addBody(wallBody3);
 
 			// Floor
 			const floorBody = new CANNON.Body({
@@ -212,14 +207,13 @@
 			document.body.appendChild(VRButton.createButton(renderer));
 
 			// Load items into the game
-			createSphere();
 			createRollingPin();
 
 			// controllers
-
 			controller1 = renderer.xr.getController(0);
 			controller1.addEventListener('selectstart', onSelectStart);
 			controller1.addEventListener('selectend', onSelectEnd);
+			controller1.addEventListener('squeezestart', onSqueezeStart);
 			controller1.userData.prevPosition = new THREE.Vector3();
 			controller1.userData.velocity = new THREE.Vector3();
 			scene.add(controller1);
@@ -227,6 +221,7 @@
 			controller2 = renderer.xr.getController(1);
 			controller2.addEventListener('selectstart', onSelectStart);
 			controller2.addEventListener('selectend', onSelectEnd);
+			controller2.addEventListener('squeezestart', onSqueezeStart);
 			controller2.userData.prevPosition = new THREE.Vector3();
 			controller2.userData.velocity = new THREE.Vector3();
 			scene.add(controller2);
@@ -298,50 +293,6 @@
 			}, undefined, (error) => {
 				console.log(error);
 				console.log("IngredientShelf.glb not found. Skipping.");
-			});
-		}
-
-		function loadDoughBowl() {
-			loader.load('./models/DoughBowl.glb', (gltf) => {
-				doughBowl = gltf.scene;
-
-				// 1. Scale the model template  
-				doughBowl.scale.set(0.2, 0.2, 0.2);
-				const pos = {
-					x: 0,
-					y: 1.5,
-					z: 6
-				};
-				doughBowl.position.set(pos.x, pos.y, pos.z);
-
-				// 2. Enable Shadows
-				doughBowl.traverse((child) => {
-					if (child.isMesh) {
-						child.castShadow = true;
-					}
-				});
-
-				// 3. Calculate bounding box of the scaled model
-				const box = new THREE.Box3().setFromObject(doughBowl);
-				const size = new THREE.Vector3();
-				box.getSize(size);
-
-				// 4. Store the correct physics extents (half-sizes)
-				let halfExtents = new CANNON.Vec3(size.x / 2, size.y, size.z / 2);
-
-				const doughBowlBody = new CANNON.Body({
-					mass: 0,
-					shape: new CANNON.Box(halfExtents),
-					material: matBounce
-				});
-				doughBowlBody.position.copy(doughBowl.position);
-				physicsWorld.addBody(doughBowlBody);
-
-				console.log("Dough Bowl Loaded.");
-				scene.add(doughBowl);
-			}, undefined, (error) => {
-				console.log(error);
-				console.log("DoughBowl.glb not found. Skipping.");
 			});
 		}
 
@@ -449,43 +400,86 @@
 				console.log("Oven.glb not found. Skipping.");
 			});
 		}
+
+		function loadTicketStation() {
+			loader.load('./models/TicketStation.glb', (gltf) => {
+				ticketStation = gltf.scene;
+
+				// 1. Scale the model template  
+				ticketStation.scale.set(0.5, 0.5, 0.5);
+				const pos = {
+					x: 0,
+					y: 0.75,
+					z: -6
+				};
+				ticketStation.position.set(pos.x, pos.y, pos.z);
+				ticketStation.rotation.set(0, -Math.PI/2, 0);
+
+				// 2. Enable Shadows
+				ticketStation.traverse((child) => {
+					if (child.isMesh) {
+						child.castShadow = true;
+					}
+				});
+
+				// 3. Calculate bounding box of the scaled model
+				const box = new THREE.Box3().setFromObject(ticketStation);
+				const size = new THREE.Vector3();
+				box.getSize(size);
+
+				// 4. Store the correct physics extents (half-sizes)
+				let halfExtents = new CANNON.Vec3(size.x / 2 - 0.3, size.y / 4 - 0.05, size.z / 2);
+
+				const ticketStationBody = new CANNON.Body({
+					mass: 0,
+					shape: new CANNON.Box(halfExtents),
+					material: matBounce
+				});
+				ticketStationBody.position.copy(ticketStation.position);
+				physicsWorld.addBody(ticketStationBody);
+
+				ticketStationBody.addEventListener('collide', (event) => {
+
+				});
+
+				console.log("Ticket Station Loaded.");
+				scene.add(ticketStation);
+			}, undefined, (error) => {
+				console.log(error);
+				console.log("TicketStation.glb not found. Skipping.");
+			});
+		}
 		
 		function findPhysicsObject(mesh) {
 			return objects.find(obj => obj.mesh === mesh);
 		}
 
-		function createSphere() {
-			for (let i = 0; i < 3; i++) {
-				const pos = {
-					x: -0.5 + 0.5 * i,
-					y: 1.6,
-					z: 6
-				};
+		function createSphere(spawnPoint, sphereColor, objType) {
+			const pos = spawnPoint;
 
-				// Visual Sphere
-				const radius = 0.1;
-				const sphereMesh = new THREE.Mesh(
-					new THREE.SphereGeometry(radius, 32, 32),
-					new THREE.MeshStandardMaterial({ color: 0xfcf8c8 })
-				);
-				sphereMesh.position.set(pos.x, pos.y, pos.z);
-				sphereMesh.castShadow = true;
-				scene.add(sphereMesh);
+			// Visual Sphere
+			const radius = 0.1;
+			const sphereMesh = new THREE.Mesh(
+				new THREE.SphereGeometry(radius, 32, 32),
+				new THREE.MeshStandardMaterial({ color: sphereColor })
+			);
+			sphereMesh.position.set(pos.x, pos.y, pos.z);
+			sphereMesh.castShadow = true;
+			scene.add(sphereMesh);
 
-				// Physics Body for Sphere
-				const sphereBody = new CANNON.Body({
-					mass: 1,
-					// Need to set to the size of the radius: 0.6 --> radius
-					shape: new CANNON.Sphere(radius),
-					material: matBounce
-				});
-				sphereBody.position.copy(sphereMesh.position);
-				sphereBody.userData = {type: 'sphere', transformed: false};
-				physicsWorld.addBody(sphereBody);
+			// Physics Body for Sphere
+			const sphereBody = new CANNON.Body({
+				mass: 1,
+				// Need to set to the size of the radius: 0.6 --> radius
+				shape: new CANNON.Sphere(radius),
+				material: matBounce
+			});
+			sphereBody.position.copy(sphereMesh.position);
+			sphereBody.userData = {type: objType, transformed: false, trashed: false};
+			physicsWorld.addBody(sphereBody);
 
-				objects.push({ mesh: sphereMesh, body: sphereBody});
-				group.add(sphereMesh);
-			}
+			objects.push({ mesh: sphereMesh, body: sphereBody});
+			group.add(sphereMesh);
         }
 
 		function replaceSphereWithCylinder(sphereObj) {
@@ -535,7 +529,7 @@
 
 			physicsWorld.addBody(cylinderBody);
 
-			objects.push({ mesh: cylinderMesh, body: cylinderBody });
+			objects.push({ mesh: cylinderMesh, body: cylinderBody, type: 'cylinder' });
 		}
 
 		function createRollingPin() {
@@ -563,7 +557,7 @@
 				box.getSize(size);
 
 				// 4. Store the correct physics extents (half-sizes)
-				rollingPinHalfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
+				let rollingPinHalfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
 				
 				scene.add(rollingPinMesh);
 
@@ -583,9 +577,9 @@
 				rollingPinBody.addEventListener('collide', (event) => {
 					const other = event.body;
 
-					if (other.userData && other.userData.type === 'sphere' && !other.userData.transformed) {
+					if (other.userData && other.userData.type === 'dough' && !other.userData.transformed) {
 						other.userData.transformed = true;
-						console.log('Rolling pin hit a sphere!');
+						console.log('Rolling pin hit a dough!');
 
 						const sphereObj = objects.find(obj => obj.body === other);
 
@@ -604,14 +598,18 @@
 		}
 
 		function createDoughBowl() {
-			
 			loader.load('./models/DoughBowl.glb', (gltf) => {
 				doughBowl = gltf.scene;
 
 				// 1. Scale the model template  
-				doughBowl.scale.set(0.1, 0.1, 0.1);
-				doughBowl.position.set(-4.25, 2.05, 1);
-				
+				doughBowl.scale.set(0.2, 0.2, 0.2);
+				const pos = {
+					x: 1,
+					y: 1.5,
+					z: 5.5
+				};
+				doughBowl.position.set(pos.x, pos.y, pos.z);
+				doughBowl.rotation.set(0, Math.PI / 2, 0);
 
 				// 2. Enable Shadows
 				doughBowl.traverse((child) => {
@@ -620,53 +618,118 @@
 					}
 				});
 
-				const doughBowlMesh = doughBowl.clone();
-				doughBowlMesh.castShadow = true;
-
 				// 3. Calculate bounding box of the scaled model
-				const box = new THREE.Box3().setFromObject(doughBowlMesh);
+				const box = new THREE.Box3().setFromObject(doughBowl);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
 				// 4. Store the correct physics extents (half-sizes)
-				rollingPinHalfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
-				
-				scene.add(rollingPinMesh);
+				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
 
-				const rollingPinBody = new CANNON.Body({
+				const doughBowlBody = new CANNON.Body({
 					mass: 0,
-					shape: new CANNON.Box(rollingPinHalfExtents),
+					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				rollingPinBody.position.copy(rollingPin.position);
-				rollingPinBody.quaternion.copy(rollingPin.quaternion);
-				rollingPinBody.userData = { type: 'doughBowl' };
-				physicsWorld.addBody(rollingPinBody);
-
-				objects.push({ mesh: rollingPinMesh, body: rollingPinBody});
-				// group.add(rollingPinMesh);
-
-				// rollingPinBody.addEventListener('collide', (event) => {
-				// 	const other = event.body;
-
-				// 	if (other.userData && other.userData.type === 'sphere' && !other.userData.transformed) {
-				// 		other.userData.transformed = true;
-				// 		console.log('Rolling pin hit a sphere!');
-
-				// 		const sphereObj = objects.find(obj => obj.body === other);
-
-				// 		if (sphereObj) {
-				// 			replaceSphereWithCylinder(sphereObj);
-				// 		}
-				// 	}
-				// });
+				doughBowlBody.position.set(1, 1.4, 5.5);
+				physicsWorld.addBody(doughBowlBody);
 
 				console.log("Dough Bowl Loaded.");
+				scene.add(doughBowl);
 			}, undefined, (error) => {
 				console.log(error);
 				console.log("DoughBowl.glb not found. Skipping.");
 			});
+		}
 
+		function createSauceBowl() {
+			loader.load('./models/DoughBowl.glb', (gltf) => {
+				sauceBowl = gltf.scene;
+
+				// 1. Scale the model template  
+				sauceBowl.scale.set(0.2, 0.2, 0.2);
+				const pos = {
+					x: 0,
+					y: 1.5,
+					z: 5.5
+				};
+				sauceBowl.position.set(pos.x, pos.y, pos.z);
+				sauceBowl.rotation.set(0, Math.PI / 2, 0);
+
+				// 2. Enable Shadows
+				sauceBowl.traverse((child) => {
+					if (child.isMesh) {
+						child.castShadow = true;
+					}
+				});
+
+				// 3. Calculate bounding box of the scaled model
+				const box = new THREE.Box3().setFromObject(sauceBowl);
+				const size = new THREE.Vector3();
+				box.getSize(size);
+
+				// 4. Store the correct physics extents (half-sizes)
+				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
+
+				const sauceBowlBody = new CANNON.Body({
+					mass: 0,
+					shape: new CANNON.Box(halfExtents),
+					material: matBounce
+				});
+				sauceBowlBody.position.set(1, 1.4, 5.5);
+				physicsWorld.addBody(sauceBowlBody);
+
+				console.log("Sauce Bowl Loaded.");
+				scene.add(sauceBowl);
+			}, undefined, (error) => {
+				console.log(error);
+				console.log("SauceBowl.glb not found. Skipping.");
+			});
+		}
+
+		function createCheeseBowl() {
+			loader.load('./models/DoughBowl.glb', (gltf) => {
+				cheeseBowl = gltf.scene;
+
+				// 1. Scale the model template  
+				cheeseBowl.scale.set(0.2, 0.2, 0.2);
+				const pos = {
+					x: -1,
+					y: 1.5,
+					z: 5.5
+				};
+				cheeseBowl.position.set(pos.x, pos.y, pos.z);
+				cheeseBowl.rotation.set(0, Math.PI / 2, 0);
+
+				// 2. Enable Shadows
+				cheeseBowl.traverse((child) => {
+					if (child.isMesh) {
+						child.castShadow = true;
+					}
+				});
+
+				// 3. Calculate bounding box of the scaled model
+				const box = new THREE.Box3().setFromObject(cheeseBowl);
+				const size = new THREE.Vector3();
+				box.getSize(size);
+
+				// 4. Store the correct physics extents (half-sizes)
+				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
+
+				const cheeseBowlBody = new CANNON.Body({
+					mass: 0,
+					shape: new CANNON.Box(halfExtents),
+					material: matBounce
+				});
+				cheeseBowlBody.position.set(1, 1.4, 5.5);
+				physicsWorld.addBody(cheeseBowlBody);
+
+				console.log("Cheese Bowl Loaded.");
+				scene.add(cheeseBowl);
+			}, undefined, (error) => {
+				console.log(error);
+				console.log("CheeseBowl.glb not found. Skipping.");
+			});
 		}
 
 		function onWindowResize() {
@@ -750,6 +813,30 @@
 				}
 				controller.userData.selected = undefined;
 			}
+		}
+
+		function onSqueezeStart(event) {
+			const controller = event.target;
+
+			let spawnPoint;
+
+            raycaster.setFromXRController(controller);
+            const doughIntersects = raycaster.intersectObject(doughBowl);
+			const sauceIntersects = raycaster.intersectObject(sauceBowl);
+			const cheeseIntersects = raycaster.intersectObject(cheeseBowl);
+
+            if (doughIntersects.length > 0) {
+                spawnPoint = { x: 1, y: 1.4, z: 5.1};
+				createSphere(spawnPoint, 0xfcf8c8, 'dough');
+            }
+			if (sauceIntersects.length > 0) {
+                spawnPoint = { x: 0, y: 1.4, z: 5.1};
+				createSphere(spawnPoint, 0xeb4034, 'tomato');
+            }
+			if (cheeseIntersects.length > 0) {
+                spawnPoint = { x: -1, y: 1.4, z: 5.1};
+				createSphere(spawnPoint, 0xf7ca14, 'cheese');
+            }
 		}
 
 

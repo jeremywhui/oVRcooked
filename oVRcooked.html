@@ -89,7 +89,9 @@
 		let kitchen, ingredientShelf, workstation, oven, ticketStation; 
 		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = true;
+		let isDebugVisible = false;
+
+		let score = 0;
 
 		const clock = new THREE.Clock();
 		const loader = new GLTFLoader();
@@ -273,7 +275,7 @@
 
 		}
 
-		let flatDough, tomatoDough, cheeseDough;
+		let flatDough, tomatoDough, cheeseDough, bakedPizza;
 		let flatDoughHalfExtents;
 		loader.load('./models/FlattenedDough.glb', (gltf) => {
 			flatDough = gltf.scene;
@@ -327,6 +329,24 @@
 		}, undefined, (error) => {
 			console.log(error);
 			console.log("FlattenedDoughCheese.glb not found. Skipping.");
+		});
+
+		loader.load('./models/FlattenedDoughCheeseBaked.glb', (gltf) => {
+			bakedPizza = gltf.scene;
+
+			// 1. Scale the model template  
+			bakedPizza.scale.set(0.25, 0.25, 0.25);
+
+			// 2. Enable Shadows
+			bakedPizza.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true;
+				}
+			});
+			console.log("Baked Pizza Loaded.");
+		}, undefined, (error) => {
+			console.log(error);
+			console.log("FlattenedDoughCheeseBaked.glb not found. Skipping.");
 		});
 
 		function loadIngredientShelf() {
@@ -453,14 +473,14 @@
 				box.getSize(size);
 
 				// 4. Store the correct physics extents (half-sizes)
-				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
+				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2.4);
 
 				const ovenBody = new CANNON.Body({
 					mass: 0,
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				ovenBody.position.set(4, 0.3, 0);
+				ovenBody.position.set(4, 0.3, 0.4);
 				physicsWorld.addBody(ovenBody);
 
 				const ovenBodyTop = new CANNON.Body({
@@ -470,6 +490,28 @@
 				});
 				ovenBodyTop.position.set(4, 1.3, 0);
 				physicsWorld.addBody(ovenBodyTop);
+
+				const ovenIn = new CANNON.Body({
+					mass: 0,
+					shape: new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 12)),
+					material: matBounce
+				});
+				ovenIn.position.set(4, 0.3, -2.1);
+				physicsWorld.addBody(ovenIn);
+
+				ovenIn.addEventListener('collide', (event) => {
+					const other = event.body;
+
+					if (other.userData && other.userData.type === 'cheeseDough' && !other.userData.transformed) {
+						other.userData.transformed = true;
+
+						const doughObj = objects.find(obj => obj.body === other);
+
+						if (doughObj) {
+							bake(doughObj);
+						}
+					}
+				});
 
 				console.log("Oven Loaded.");
 				scene.add(oven);
@@ -517,7 +559,23 @@
 				physicsWorld.addBody(ticketStationBody);
 
 				ticketStationBody.addEventListener('collide', (event) => {
+					const other = event.body;
 
+					if (other.userData && other.userData.type === 'bakedPizza' && !other.userData.transformed) {
+						other.userData.transformed = true;
+
+						const pizzaObj = objects.find(obj => obj.body === other);
+
+						if (pizzaObj) {
+							if (other.userData.removed) return;
+							other.userData.removed = true;
+							if (pizzaObj) {
+								pizzaObj.toRemove = true;
+							}
+							score += 10;
+							console.log(`Score +10! Pizza successfully sold! Your current score is ${score}.`);
+						}
+					}
 				});
 
 				console.log("Ticket Station Loaded.");
@@ -561,38 +619,92 @@
 
 			if (objType === 'tomato') {
 				sphereBody.addEventListener('collide', (event) => {
-					console.log("Collision!");
 					const other = event.body;
 
 					if (other.userData && other.userData.type === 'flatDough' && !other.userData.transformed) {
 						other.userData.transformed = true;
-						console.log('Tomato hit flat dough!');
 
 						const doughObj = objects.find(obj => obj.body === other);
 
 						if (doughObj) {
 							addTomato(doughObj);
 						}
+
+						if (sphereBody.userData.removed) return;
+
+						sphereBody.userData.removed = true;
+
+						const sphereObj = objects.find(obj => obj.body === sphereBody);
+						if (sphereObj) {
+							sphereObj.toRemove = true;
+						}
 					}
 				});
 			} else if (objType === 'cheese') {
 				sphereBody.addEventListener('collide', (event) => {
-					console.log("Collision!");
 					const other = event.body;
 
 					if (other.userData && other.userData.type === 'tomatoDough' && !other.userData.transformed) {
 						other.userData.transformed = true;
-						console.log('Cheese hit tomato dough!');
 
 						const doughObj = objects.find(obj => obj.body === other);
 
 						if (doughObj) {
 							addCheese(doughObj);
 						}
+
+						if (sphereBody.userData.removed) return;
+
+						sphereBody.userData.removed = true;
+
+						const sphereObj = objects.find(obj => obj.body === sphereBody);
+						if (sphereObj) {
+							sphereObj.toRemove = true;
+						}
 					}
 				});
 			}
         }
+
+		function bake(cheeseDoughObj) {
+			const { mesh, body } = cheeseDoughObj;
+
+			// Remove old pizza
+			physicsWorld.removeBody(body);
+			scene.remove(mesh);
+			group.remove(mesh);
+
+			// Remove from objects array
+			const index = objects.indexOf(cheeseDoughObj);
+			if (index !== -1) objects.splice(index, 1);
+
+			// ---- Create cylinder mesh ----
+			const radius = 0.25;
+			const height = 0.05;
+
+			const cylinderMesh = bakedPizza.clone();
+
+			cylinderMesh.position.set(4, 1.4, 2.1);
+			cylinderMesh.castShadow = true;
+
+			scene.add(cylinderMesh);
+			group.add(cylinderMesh);
+
+			// ---- Create cylinder body ----
+			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
+
+			const cylinderBody = new CANNON.Body({
+				mass: 1,
+				material: matBounce
+			});
+
+			cylinderBody.addShape(cylinderShape, new CANNON.Vec3());
+			cylinderBody.userData = { type: 'bakedPizza' };
+			cylinderBody.position.set(4, 1.4, 2.1);
+			physicsWorld.addBody(cylinderBody);
+
+			objects.push({ mesh: cylinderMesh, body: cylinderBody, type: 'bakedPizza' });
+		}
 
 		function addCheese(tomatoDoughObj) {
 			const { mesh, body } = tomatoDoughObj;
@@ -766,12 +878,10 @@
 				group.add(rollingPinMesh);
 
 				rollingPinBody.addEventListener('collide', (event) => {
-					console.log("Collision!");
 					const other = event.body;
 
 					if (other.userData && other.userData.type === 'dough' && !other.userData.transformed) {
 						other.userData.transformed = true;
-						console.log('Rolling pin hit a dough!');
 
 						const doughObj = objects.find(obj => obj.body === other);
 
@@ -967,7 +1077,6 @@
 				currSelect = true;
 				const hit = objectIntersections[0].object;
 				const object = getRootObject(hit);
-				console.log(object);
 				object.traverse(child => {
 					if (child.isMesh && child.material && child.material.emissive) {
 						child.material.emissive.b = 1;
@@ -1062,6 +1171,19 @@
 			}
 		}
 
+		function removeObjects() {
+			for (let i = objects.length - 1; i >= 0; i--) {
+				const obj = objects[i];
+
+				if (obj.toRemove) {
+					physicsWorld.removeBody(obj.body);
+					scene.remove(obj.mesh);
+					group.remove(obj.mesh);
+					objects.splice(i, 1);
+				}
+			}
+		}
+
 		function animate() {
 
 			cleanIntersected();
@@ -1072,6 +1194,7 @@
 			const dt = clock.getDelta();
 
             physicsWorld.step(1 / 60, dt, 3);
+			removeObjects();
 
 			if (!currSelect) {
 				objects.forEach(obj => {

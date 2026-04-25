@@ -251,6 +251,62 @@
 
 		}
 
+		let flatDough, tomatoDough, cheeseDough;
+		let flatDoughHalfExtents;
+		loader.load('./models/FlattenedDough.glb', (gltf) => {
+			flatDough = gltf.scene;
+
+			// 1. Scale the model template  
+			flatDough.scale.set(0.25, 0.25, 0.25);
+
+			// 2. Enable Shadows
+			flatDough.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true;
+				}
+			});
+			console.log("Flat Dough Loaded.");
+		}, undefined, (error) => {
+			console.log(error);
+			console.log("FlattenedDough.glb not found. Skipping.");
+		});
+
+		loader.load('./models/FlattenedDoughSauce.glb', (gltf) => {
+			tomatoDough = gltf.scene;
+
+			// 1. Scale the model template  
+			tomatoDough.scale.set(0.25, 0.25, 0.25);
+
+			// 2. Enable Shadows
+			tomatoDough.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true;
+				}
+			});
+			console.log("Tomato Dough Loaded.");
+		}, undefined, (error) => {
+			console.log(error);
+			console.log("FlattenedDoughSauce.glb not found. Skipping.");
+		});
+
+		loader.load('./models/FlattenedDoughCheese.glb', (gltf) => {
+			cheeseDough = gltf.scene;
+
+			// 1. Scale the model template  
+			cheeseDough.scale.set(0.25, 0.25, 0.25);
+
+			// 2. Enable Shadows
+			cheeseDough.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true;
+				}
+			});
+			console.log("Cheese Dough Loaded.");
+		}, undefined, (error) => {
+			console.log(error);
+			console.log("FlattenedDoughCheese.glb not found. Skipping.");
+		});
+
 		function loadIngredientShelf() {
 			loader.load('./models/IngredientShelf.glb', (gltf) => {
 				ingredientShelf = gltf.scene;
@@ -480,35 +536,64 @@
 
 			objects.push({ mesh: sphereMesh, body: sphereBody});
 			group.add(sphereMesh);
+
+			if (objType === 'tomato') {
+				sphereBody.addEventListener('collide', (event) => {
+					console.log("Collision!");
+					const other = event.body;
+
+					if (other.userData && other.userData.type === 'flatDough' && !other.userData.transformed) {
+						other.userData.transformed = true;
+						console.log('Tomato hit flat dough!');
+
+						const doughObj = objects.find(obj => obj.body === other);
+
+						if (doughObj) {
+							addTomato(doughObj);
+						}
+					}
+				});
+			} else if (objType === 'cheese') {
+				sphereBody.addEventListener('collide', (event) => {
+					console.log("Collision!");
+					const other = event.body;
+
+					if (other.userData && other.userData.type === 'tomatoDough' && !other.userData.transformed) {
+						other.userData.transformed = true;
+						console.log('Cheese hit tomato dough!');
+
+						const doughObj = objects.find(obj => obj.body === other);
+
+						if (doughObj) {
+							addCheese(doughObj);
+						}
+					}
+				});
+			}
         }
 
-		function replaceSphereWithCylinder(sphereObj) {
-			const { mesh, body } = sphereObj;
+		function addCheese(tomatoDoughObj) {
+			const { mesh, body } = tomatoDoughObj;
 
 			// Save transform
 			const position = body.position.clone();
-			// const quaternion = body.quaternion.clone();
 
-			// Remove old sphere
+			// Remove old pizza
 			physicsWorld.removeBody(body);
 			scene.remove(mesh);
 			group.remove(mesh);
 
 			// Remove from objects array
-			const index = objects.indexOf(sphereObj);
+			const index = objects.indexOf(tomatoDoughObj);
 			if (index !== -1) objects.splice(index, 1);
 
 			// ---- Create cylinder mesh ----
-			const radius = 0.3;
+			const radius = 0.25;
 			const height = 0.05;
 
-			const cylinderMesh = new THREE.Mesh(
-				new THREE.CylinderGeometry(radius, radius, height, 32),
-				new THREE.MeshStandardMaterial({ color: 0xfcf8c8 })
-			);
+			const cylinderMesh = cheeseDough.clone();
 
 			cylinderMesh.position.copy(position);
-			// cylinderMesh.quaternion.copy(quaternion);
 			cylinderMesh.castShadow = true;
 
 			scene.add(cylinderMesh);
@@ -523,13 +608,98 @@
 			});
 
 			cylinderBody.addShape(cylinderShape, new CANNON.Vec3());
-
+			cylinderBody.userData = { type: 'cheeseDough' };
 			cylinderBody.position.copy(position);
-			// cylinderBody.quaternion.copy(quaternion);
-
 			physicsWorld.addBody(cylinderBody);
 
-			objects.push({ mesh: cylinderMesh, body: cylinderBody, type: 'cylinder' });
+			objects.push({ mesh: cylinderMesh, body: cylinderBody, type: 'cheeseDough' });
+		}
+
+		function addTomato(doughObj) {
+			const { mesh, body } = doughObj;
+
+			// Save transform
+			const position = body.position.clone();
+
+			// Remove old pizza
+			physicsWorld.removeBody(body);
+			scene.remove(mesh);
+			group.remove(mesh);
+
+			// Remove from objects array
+			const index = objects.indexOf(doughObj);
+			if (index !== -1) objects.splice(index, 1);
+
+			// ---- Create cylinder mesh ----
+			const radius = 0.25;
+			const height = 0.05;
+
+			const cylinderMesh = tomatoDough.clone();
+
+			cylinderMesh.position.copy(position);
+			cylinderMesh.castShadow = true;
+
+			scene.add(cylinderMesh);
+			group.add(cylinderMesh);
+
+			// ---- Create cylinder body ----
+			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
+
+			const cylinderBody = new CANNON.Body({
+				mass: 1,
+				material: matBounce
+			});
+
+			cylinderBody.addShape(cylinderShape, new CANNON.Vec3());
+			cylinderBody.userData = { type: 'tomatoDough' };
+			cylinderBody.position.copy(position);
+			physicsWorld.addBody(cylinderBody);
+
+			objects.push({ mesh: cylinderMesh, body: cylinderBody, type: 'tomatoDough' });
+		}
+
+		function flattenDough(sphereObj) {
+			const { mesh, body } = sphereObj;
+
+			// Save transform
+			const position = body.position.clone();
+
+			// Remove old sphere
+			physicsWorld.removeBody(body);
+			scene.remove(mesh);
+			group.remove(mesh);
+
+			// Remove from objects array
+			const index = objects.indexOf(sphereObj);
+			if (index !== -1) objects.splice(index, 1);
+
+			// ---- Create cylinder mesh ----
+			const radius = 0.25;
+			const height = 0.05;
+
+			const cylinderMesh = flatDough.clone();
+
+			cylinderMesh.position.copy(position);
+			cylinderMesh.castShadow = true;
+
+			scene.add(cylinderMesh);
+			group.add(cylinderMesh);
+
+			// ---- Create cylinder body ----
+			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
+
+			const cylinderBody = new CANNON.Body({
+				mass: 1,
+				material: matBounce
+			});
+
+			cylinderBody.addShape(cylinderShape, new CANNON.Vec3());
+			cylinderBody.userData = { type: 'flatDough' };
+			cylinderBody.position.copy(position);
+			physicsWorld.addBody(cylinderBody);
+
+			objects.push({ mesh: cylinderMesh, body: cylinderBody, type: 'flatDough' });
+
 		}
 
 		function createRollingPin() {
@@ -567,24 +737,24 @@
 					material: matBounce
 				});
 				rollingPinBody.position.copy(rollingPin.position);
-				rollingPinBody.quaternion.copy(rollingPin.quaternion);
 				rollingPinBody.userData = { type: 'rollingPin' };
 				physicsWorld.addBody(rollingPinBody);
 
-				objects.push({ mesh: rollingPinMesh, body: rollingPinBody});
+				objects.push({ mesh: rollingPinMesh, body: rollingPinBody, type: 'rolling pin'});
 				group.add(rollingPinMesh);
 
 				rollingPinBody.addEventListener('collide', (event) => {
+					console.log("Collision!");
 					const other = event.body;
 
 					if (other.userData && other.userData.type === 'dough' && !other.userData.transformed) {
 						other.userData.transformed = true;
 						console.log('Rolling pin hit a dough!');
 
-						const sphereObj = objects.find(obj => obj.body === other);
+						const doughObj = objects.find(obj => obj.body === other);
 
-						if (sphereObj) {
-							replaceSphereWithCylinder(sphereObj);
+						if (doughObj) {
+							flattenDough(doughObj);
 						}
 					}
 				});
@@ -636,6 +806,7 @@
 
 				console.log("Dough Bowl Loaded.");
 				scene.add(doughBowl);
+				// group.add(doughBowl);
 			}, undefined, (error) => {
 				console.log(error);
 				console.log("DoughBowl.glb not found. Skipping.");
@@ -643,7 +814,7 @@
 		}
 
 		function createSauceBowl() {
-			loader.load('./models/DoughBowl.glb', (gltf) => {
+			loader.load('./models/SauceBowl.glb', (gltf) => {
 				sauceBowl = gltf.scene;
 
 				// 1. Scale the model template  
@@ -676,7 +847,7 @@
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				sauceBowlBody.position.set(1, 1.4, 5.5);
+				sauceBowlBody.position.set(0, 1.4, 5.5);
 				physicsWorld.addBody(sauceBowlBody);
 
 				console.log("Sauce Bowl Loaded.");
@@ -688,7 +859,7 @@
 		}
 
 		function createCheeseBowl() {
-			loader.load('./models/DoughBowl.glb', (gltf) => {
+			loader.load('./models/CheeseBowl.glb', (gltf) => {
 				cheeseBowl = gltf.scene;
 
 				// 1. Scale the model template  
@@ -721,7 +892,7 @@
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				cheeseBowlBody.position.set(1, 1.4, 5.5);
+				cheeseBowlBody.position.set(-1, 1.4, 5.5);
 				physicsWorld.addBody(cheeseBowlBody);
 
 				console.log("Cheese Bowl Loaded.");

@@ -89,7 +89,7 @@
 		let kitchen, ingredientShelf, workstation, oven, ticketStation; 
 		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = false;
+		let isDebugVisible = true;
 
 		const clock = new THREE.Clock();
 		const loader = new GLTFLoader();
@@ -172,6 +172,28 @@
 			wallBody2.addShape(wallShape2);
 			wallBody2.position.set(0, 1.5, -7.2);
 			physicsWorld.addBody(wallBody2);
+
+			const wallShape3 = new CANNON.Box(new CANNON.Vec3(wallWidth * 3/4, wallHeight / 2, wallDepth / 2));
+			const wallBody3 = new CANNON.Body({
+				mass: 0,
+				material: matFloor
+			});
+			
+			wallBody3.addShape(wallShape3);
+			wallBody3.position.set(-4.75, 1.5, 0);
+			wallBody3.quaternion.setFromEuler(0, Math.PI/2, 0);
+			physicsWorld.addBody(wallBody3);
+
+			const wallShape4 = new CANNON.Box(new CANNON.Vec3(wallWidth * 3/4, wallHeight / 2, wallDepth / 2));
+			const wallBody4 = new CANNON.Body({
+				mass: 0,
+				material: matFloor
+			});
+			
+			wallBody4.addShape(wallShape4);
+			wallBody4.position.set(4.75, 1.5, 0);
+			wallBody4.quaternion.setFromEuler(0, Math.PI/2, 0);
+			physicsWorld.addBody(wallBody4);
 
 			// Floor
 			const floorBody = new CANNON.Body({
@@ -630,7 +652,7 @@
 			const index = objects.indexOf(doughObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// ---- Create cylinder mesh ----
+			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.05;
 
@@ -642,7 +664,7 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// ---- Create cylinder body ----
+			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({
@@ -673,7 +695,7 @@
 			const index = objects.indexOf(sphereObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// ---- Create cylinder mesh ----
+			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.05;
 
@@ -685,7 +707,7 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// ---- Create cylinder body ----
+			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({

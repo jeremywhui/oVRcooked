@@ -275,7 +275,7 @@
 
 		}
 
-		let flatDough, tomatoDough, cheeseDough, bakedPizza, cheese;
+		let flatDough, tomatoDough, cheeseDough, bakedPizza, cheese, tomato;
 		let flatDoughHalfExtents;
 		loader.load('./models/FlattenedDough.glb', (gltf) => {
 			flatDough = gltf.scene;
@@ -363,9 +363,26 @@
 			});
 
 			console.log("Cheese Loaded.");
-			scene.add(cheese);
 		}, undefined, (error) => {
 			console.log("Cheese.glb not found. Skipping.");
+		});
+
+		loader.load('./models/Tomato.glb', (gltf) => {
+			tomato = gltf.scene;
+
+			// 1. Scale the model template  
+			tomato.scale.set(0.1, 0.1, 0.1);
+
+			// 2. Enable Shadows
+			tomato.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true;
+				}
+			});
+
+			console.log("Tomato Loaded.");
+		}, undefined, (error) => {
+			console.log("Tomato.glb not found. Skipping.");
 		});
 
 		function loadIngredientShelf() {
@@ -729,6 +746,49 @@
 			});
         }
 
+		function createTomato(spawnPoint) {
+			const pos = spawnPoint;
+
+			const tomatoMesh = tomato.clone();
+			tomatoMesh.position.set(pos.x, pos.y, pos.z);
+			tomatoMesh.castShadow = true;
+
+			// Physics Body for Sphere
+			const tomatoBody = new CANNON.Body({
+				mass: 1,
+				// Need to set to the size of the radius: 0.6 --> radius
+				shape: new CANNON.Sphere(0.1),
+				material: matBounce
+			});
+			tomatoBody.position.copy(tomatoMesh.position);
+			tomatoBody.userData = {type: 'tomato', transformed: false, trashed: false};
+			physicsWorld.addBody(tomatoBody);
+
+			objects.push({ mesh: tomatoMesh, body: tomatoBody});
+			group.add(tomatoMesh);
+			tomatoBody.addEventListener('collide', (event) => {
+				const other = event.body;
+
+				if (other.userData && other.userData.type === 'flatDough' && !other.userData.transformed) {
+					other.userData.transformed = true;
+
+					const doughObj = objects.find(obj => obj.body === other);
+
+					if (doughObj) {
+						addTomato(doughObj);
+					}
+
+					if (tomatoBody.userData.removed) return;
+
+					tomatoBody.userData.removed = true;
+
+					const tomatoObj = objects.find(obj => obj.body === tomatoBody);
+					if (tomatoObj) {
+						tomatoObj.toRemove = true;
+					}
+				}
+			});
+		}
 
 		function bake(cheeseDoughObj) {
 			const { mesh, body } = cheeseDoughObj;
@@ -972,7 +1032,7 @@
 				const pos = {
 					x: 1,
 					y: 1.5,
-					z: 5.5
+					z: 5.7
 				};
 				doughBowl.position.set(pos.x, pos.y, pos.z);
 				doughBowl.rotation.set(0, Math.PI / 2, 0);
@@ -997,7 +1057,7 @@
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				doughBowlBody.position.set(1, 1.4, 5.5);
+				doughBowlBody.position.set(1, 1.4, 5.7);
 				physicsWorld.addBody(doughBowlBody);
 
 				console.log("Dough Bowl Loaded.");
@@ -1018,7 +1078,7 @@
 				const pos = {
 					x: 0,
 					y: 1.5,
-					z: 5.5
+					z: 5.7
 				};
 				sauceBowl.position.set(pos.x, pos.y, pos.z);
 				sauceBowl.rotation.set(0, Math.PI / 2, 0);
@@ -1043,7 +1103,7 @@
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				sauceBowlBody.position.set(0, 1.4, 5.5);
+				sauceBowlBody.position.set(0, 1.4, 5.7);
 				physicsWorld.addBody(sauceBowlBody);
 
 				console.log("Sauce Bowl Loaded.");
@@ -1063,7 +1123,7 @@
 				const pos = {
 					x: -1,
 					y: 1.5,
-					z: 5.5
+					z: 5.7
 				};
 				cheeseBowl.position.set(pos.x, pos.y, pos.z);
 				cheeseBowl.rotation.set(0, Math.PI / 2, 0);
@@ -1088,7 +1148,7 @@
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				cheeseBowlBody.position.set(-1, 1.4, 5.5);
+				cheeseBowlBody.position.set(-1, 1.4, 5.7);
 				physicsWorld.addBody(cheeseBowlBody);
 
 				console.log("Cheese Bowl Loaded.");
@@ -1192,15 +1252,15 @@
 			const cheeseIntersects = raycaster.intersectObject(cheeseBowl);
 
             if (doughIntersects.length > 0) {
-                spawnPoint = { x: 1, y: 1.4, z: 5.1};
+                spawnPoint = { x: 1, y: 1.4, z: 5.3};
 				createSphere(spawnPoint, 0xfcf8c8, 'dough');
             }
 			if (sauceIntersects.length > 0) {
-                spawnPoint = { x: 0, y: 1.4, z: 5.1};
-				createSphere(spawnPoint, 0xeb4034, 'tomato');
+                spawnPoint = { x: 0, y: 1.4, z: 5.3};
+				createTomato(spawnPoint);
             }
 			if (cheeseIntersects.length > 0) {
-                spawnPoint = { x: -1, y: 1.4, z: 5.1};
+                spawnPoint = { x: -1, y: 1.4, z: 5.3};
 				createCheese(spawnPoint);
             }
 		}

@@ -86,10 +86,10 @@
 		let controllerGrip1, controllerGrip2;
 
 		let group; // To hold our grabbable objects
-		let kitchen, ingredientShelf, workstation, oven, ticketStation; 
+		let kitchen, ingredientShelf, workstation, oven, ticketStation;
 		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = false;
+		let isDebugVisible = true;
 
 		let score = 0;
 
@@ -275,7 +275,7 @@
 
 		}
 
-		let flatDough, tomatoDough, cheeseDough, bakedPizza;
+		let flatDough, tomatoDough, cheeseDough, bakedPizza, cheese;
 		let flatDoughHalfExtents;
 		loader.load('./models/FlattenedDough.glb', (gltf) => {
 			flatDough = gltf.scene;
@@ -347,6 +347,25 @@
 		}, undefined, (error) => {
 			console.log(error);
 			console.log("FlattenedDoughCheeseBaked.glb not found. Skipping.");
+		});
+
+		loader.load('./models/ProceduralCheese.glb', (gltf) => {
+			cheese = gltf.scene;
+
+			// 1. Scale the model template  
+			cheese.scale.set(0.1, 0.1, 0.1);
+
+			// 2. Enable Shadows
+			cheese.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = true;
+				}
+			});
+
+			console.log("Cheese Loaded.");
+			scene.add(cheese);
+		}, undefined, (error) => {
+			console.log("Cheese.glb not found. Skipping.");
 		});
 
 		function loadIngredientShelf() {
@@ -665,6 +684,51 @@
 				});
 			}
         }
+
+		function createCheese(spawnPoint) {
+			const pos = spawnPoint;
+
+			const cheeseMesh = cheese.clone();
+			cheeseMesh.position.set(pos.x, pos.y, pos.z);
+			cheeseMesh.castShadow = true;
+
+			// Physics Body for Sphere
+			const cheeseBody = new CANNON.Body({
+				mass: 1,
+				// Need to set to the size of the radius: 0.6 --> radius
+				shape: new CANNON.Box(new CANNON.Vec3(0.1, 0.1, 0.2)),
+				material: matBounce
+			});
+			cheeseBody.position.copy(cheeseMesh.position);
+			cheeseBody.userData = {type: 'cheese', transformed: false, trashed: false};
+			physicsWorld.addBody(cheeseBody);
+
+			objects.push({ mesh: cheeseMesh, body: cheeseBody});
+			group.add(cheeseMesh);
+			cheeseBody.addEventListener('collide', (event) => {
+				const other = event.body;
+
+				if (other.userData && other.userData.type === 'tomatoDough' && !other.userData.transformed) {
+					other.userData.transformed = true;
+
+					const doughObj = objects.find(obj => obj.body === other);
+
+					if (doughObj) {
+						addCheese(doughObj);
+					}
+
+					if (cheeseBody.userData.removed) return;
+
+					cheeseBody.userData.removed = true;
+
+					const cheeseObj = objects.find(obj => obj.body === cheeseBody);
+					if (cheeseObj) {
+						cheeseObj.toRemove = true;
+					}
+				}
+			});
+        }
+
 
 		function bake(cheeseDoughObj) {
 			const { mesh, body } = cheeseDoughObj;
@@ -1137,7 +1201,7 @@
             }
 			if (cheeseIntersects.length > 0) {
                 spawnPoint = { x: -1, y: 1.4, z: 5.1};
-				createSphere(spawnPoint, 0xf7ca14, 'cheese');
+				createCheese(spawnPoint);
             }
 		}
 

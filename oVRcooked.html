@@ -89,7 +89,7 @@
 		let kitchen, ingredientShelf, workstation, oven, ticketStation;
 		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = true;
+		let isDebugVisible = false;
 
 		let score = 0;
 
@@ -802,7 +802,7 @@
 			const index = objects.indexOf(cheeseDoughObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// ---- Create cylinder mesh ----
+			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.05;
 
@@ -814,7 +814,7 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// ---- Create cylinder body ----
+			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({
@@ -845,7 +845,7 @@
 			const index = objects.indexOf(tomatoDoughObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// ---- Create cylinder mesh ----
+			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.05;
 
@@ -857,7 +857,7 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// ---- Create cylinder body ----
+			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({

@@ -89,7 +89,7 @@
 		let kitchen, ingredientShelf, workstation, oven, ticketStation;
 		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = false;
+		let isDebugVisible = true;
 
 		let score = 0;
 
@@ -516,7 +516,7 @@
 					shape: new CANNON.Box(halfExtents),
 					material: matBounce
 				});
-				ovenBody.position.set(4, 0.3, 0.4);
+				ovenBody.position.set(4, 0.25, 0.4);
 				physicsWorld.addBody(ovenBody);
 
 				const ovenBodyTop = new CANNON.Body({
@@ -532,7 +532,7 @@
 					shape: new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 12)),
 					material: matBounce
 				});
-				ovenIn.position.set(4, 0.3, -2.1);
+				ovenIn.position.set(4, 0.25, -2.1);
 				physicsWorld.addBody(ovenIn);
 
 				ovenIn.addEventListener('collide', (event) => {
@@ -804,7 +804,7 @@
 
 			// Create cylinder mesh
 			const radius = 0.25;
-			const height = 0.05;
+			const height = 0.03;
 
 			const cylinderMesh = bakedPizza.clone();
 
@@ -847,7 +847,7 @@
 
 			// Create cylinder mesh
 			const radius = 0.25;
-			const height = 0.05;
+			const height = 0.03;
 
 			const cylinderMesh = cheeseDough.clone();
 
@@ -890,7 +890,7 @@
 
 			// Create cylinder mesh
 			const radius = 0.25;
-			const height = 0.05;
+			const height = 0.03;
 
 			const cylinderMesh = tomatoDough.clone();
 
@@ -933,7 +933,7 @@
 
 			// Create cylinder mesh
 			const radius = 0.25;
-			const height = 0.05;
+			const height = 0.03;
 
 			const cylinderMesh = flatDough.clone();
 
@@ -979,25 +979,17 @@
 				const rollingPinMesh = rollingPin.clone();
 				rollingPinMesh.castShadow = true;
 
-				// 3. Calculate bounding box of the scaled model
-				const box = new THREE.Box3().setFromObject(rollingPinMesh);
-				const size = new THREE.Vector3();
-				box.getSize(size);
-
-				// 4. Store the correct physics extents (half-sizes)
-				let rollingPinHalfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
-				
-				scene.add(rollingPinMesh);
-
 				const rollingPinBody = new CANNON.Body({
 					mass: 1,
-					shape: new CANNON.Box(rollingPinHalfExtents),
+					shape: new CANNON.Cylinder(0.05, 0.05, 0.6, 12),
 					material: matBounce
 				});
 				rollingPinBody.position.copy(rollingPin.position);
+				rollingPinBody.quaternion.setFromEuler(Math.PI / 2, 0, 0);
 				rollingPinBody.userData = { type: 'rollingPin' };
 				physicsWorld.addBody(rollingPinBody);
 
+				scene.add(rollingPinMesh);
 				objects.push({ mesh: rollingPinMesh, body: rollingPinBody, type: 'rolling pin'});
 				group.add(rollingPinMesh);
 

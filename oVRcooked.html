@@ -93,7 +93,18 @@
 
 		let score = 0;
 
-		const clock = new THREE.Clock();
+		const ORDER_TYPES = [
+			{ id: 'pizza', label: 'Cheese Pizza', requiredType: 'bakedPizza' }
+		];
+		const TICKET_RAIL_MAX = 5;
+		const TICKET_SLOT_SPACING = 0.45;
+		const TICKET_RAIL_ORIGIN = new THREE.Vector3(1.0, 1.9, -5.8);
+
+		let activeTickets = [];
+		let ticketIdCounter = 0;
+		let nextTicketTime = 10 + Math.random() * 20;
+
+		const timer = new THREE.Timer();
 		const loader = new GLTFLoader();
 
 		const matBounce = new CANNON.Material('bouncy');
@@ -120,6 +131,7 @@
 
 			camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 50);
 			camera.position.set(0, 2, 3);
+			scene.add(camera);
 
 			loader.load('./models/Kitchen2.glb', (gltf) => {
 				kitchen = gltf.scene;
@@ -597,22 +609,45 @@
 				ticketStationBody.addEventListener('collide', (event) => {
 					const other = event.body;
 
-					if (other.userData && other.userData.type === 'bakedPizza' && !other.userData.transformed) {
-						other.userData.transformed = true;
+					if (other.userData && other.userData.type === 'bakedPizza' && !other.userData.removed) {
+						other.userData.removed = true;
 
 						const pizzaObj = objects.find(obj => obj.body === other);
+						if (pizzaObj) pizzaObj.toRemove = true;
 
-						if (pizzaObj) {
-							if (other.userData.removed) return;
-							other.userData.removed = true;
-							if (pizzaObj) {
-								pizzaObj.toRemove = true;
+						const ticketIndex = activeTickets.findIndex(t => t.requiredType === 'bakedPizza');
+						if (ticketIndex !== -1) {
+							const ticket = activeTickets[ticketIndex];
+							if (ticket.onHUD) {
+								camera.remove(ticket.mesh);
+							} else {
+								scene.remove(ticket.mesh);
+								group.remove(ticket.mesh);
 							}
-							score += 10;
-							console.log(`Score +10! Pizza successfully sold! Your current score is ${score}.`);
+
+							const removedSlot = ticket.slotIndex;
+							activeTickets.splice(ticketIndex, 1);
+
+							if (removedSlot !== null) {
+								activeTickets.forEach(t => {
+									if (t.onRail && t.slotIndex > removedSlot) t.slotIndex -= 1;
+								});
+							}
 						}
+
+						score += 10;
+						document.getElementById('score').textContent = `Score: ${score}`;
+						console.log(`Score +10! Pizza delivered! Current score: ${score}.`);
 					}
 				});
+
+				const railMesh = new THREE.Mesh(
+					new THREE.CylinderGeometry(0.015, 0.015, 2.2, 8),
+					new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.8, roughness: 0.2 })
+				);
+				railMesh.rotation.z = Math.PI / 2;
+				railMesh.position.set(0, 1.95, -5.8);
+				scene.add(railMesh);
 
 				console.log("Ticket Station Loaded.");
 				scene.add(ticketStation);
@@ -622,6 +657,96 @@
 			});
 		}
 		
+		function getSlotPosition(index) {
+			return new THREE.Vector3(
+				TICKET_RAIL_ORIGIN.x - index * TICKET_SLOT_SPACING,
+				TICKET_RAIL_ORIGIN.y,
+				TICKET_RAIL_ORIGIN.z
+			);
+		}
+
+		function spawnTicket() {
+			for (let i = activeTickets.length - 1; i >= 0; i--) {
+				const t = activeTickets[i];
+				if (t.onRail && t.slotIndex >= TICKET_RAIL_MAX - 1) {
+					scene.remove(t.mesh);
+					group.remove(t.mesh);
+					activeTickets.splice(i, 1);
+				}
+			}
+
+			activeTickets.forEach(t => {
+				if (t.onRail) t.slotIndex += 1;
+			});
+
+			const order = ORDER_TYPES[Math.floor(Math.random() * ORDER_TYPES.length)];
+			const ticketId = ticketIdCounter++;
+
+			const canvas = document.createElement('canvas');
+			canvas.width = 128;
+			canvas.height = 192;
+			const ctx = canvas.getContext('2d');
+			ctx.fillStyle = '#fffef0';
+			ctx.fillRect(0, 0, 128, 192);
+			ctx.strokeStyle = '#aaa';
+			ctx.strokeRect(4, 4, 120, 184);
+			ctx.fillStyle = '#333';
+			ctx.font = 'bold 20px Courier New';
+			ctx.textAlign = 'center';
+			ctx.fillText(`#${ticketId + 1}`, 64, 40);
+			ctx.font = '15px Courier New';
+			ctx.fillText(order.label, 64, 80);
+
+			const texture = new THREE.CanvasTexture(canvas);
+			const slotPos = getSlotPosition(0);
+
+			const ticketMesh = new THREE.Mesh(
+				new THREE.PlaneGeometry(0.12, 0.18),
+				new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide })
+			);
+			ticketMesh.position.copy(slotPos);
+			ticketMesh.userData.isTicket = true;
+			group.add(ticketMesh);
+
+			activeTickets.push({
+				ticketId,
+				orderId: order.id,
+				requiredType: order.requiredType,
+				onRail: true,
+				onHUD: false,
+				slotIndex: 0,
+				mesh: ticketMesh,
+				spawnTime: timer.getElapsed()
+			});
+		}
+
+		function ticketSpawnCheck() {
+			if (timer.getElapsed() >= nextTicketTime) {
+				spawnTicket();
+				nextTicketTime = timer.getElapsed() + 10 + Math.random() * 20;
+			}
+		}
+
+		function snapTicketToHUD(ticket) {
+			group.remove(ticket.mesh);
+
+			const removedSlot = ticket.slotIndex;
+			ticket.onRail = false;
+			ticket.onHUD = true;
+			ticket.slotIndex = null;
+
+			if (removedSlot !== null) {
+				activeTickets.forEach(t => {
+					if (t.onRail && t.slotIndex > removedSlot) t.slotIndex -= 1;
+				});
+			}
+
+			const hudIndex = activeTickets.filter(t => t.onHUD).length - 1;
+			camera.add(ticket.mesh);
+			ticket.mesh.position.set(0.28, 0.18 - hudIndex * 0.08, -0.5);
+			ticket.mesh.rotation.set(0, 0, 0);
+		}
+
 		function findPhysicsObject(mesh) {
 			return objects.find(obj => obj.mesh === mesh);
 		}
@@ -1190,9 +1315,16 @@
 			const objectIntersections = raycaster.intersectObjects(group.children, true);
 
 			if (objectIntersections.length > 0) {
-				currSelect = true;
 				const hit = objectIntersections[0].object;
 				const object = getRootObject(hit);
+
+				const ticket = activeTickets.find(t => t.mesh === object);
+				if (ticket) {
+					snapTicketToHUD(ticket);
+					return;
+				}
+
+				currSelect = true;
 				object.traverse(child => {
 					if (child.isMesh && child.material && child.material.emissive) {
 						child.material.emissive.b = 1;
@@ -1272,7 +1404,11 @@
 			if (intersections.length > 0) {
 				const intersection = intersections[0];
 				const object = intersection.object;
-				object.material.emissive.r = 1; // Highlight red
+				if (object.material && object.material.emissive) {
+					object.material.emissive.r = 1;
+				} else if (object.userData.isTicket) {
+					object.material.color.set(0xffdd66);
+				}
 				intersected.push(object);
 				line.scale.z = intersection.distance;
 			} else {
@@ -1283,7 +1419,11 @@
 		function cleanIntersected() {
 			while (intersected.length) {
 				const object = intersected.pop();
-				object.material.emissive.r = 0;
+				if (object.material && object.material.emissive) {
+					object.material.emissive.r = 0;
+				} else if (object.userData.isTicket) {
+					object.material.color.set(0xffffff);
+				}
 			}
 		}
 
@@ -1307,9 +1447,19 @@
 			intersectObjects(controller1);
 			intersectObjects(controller2);
 
-			const dt = clock.getDelta();
+			ticketSpawnCheck();
+
+			timer.update();
+			const dt = timer.getDelta();
 
             physicsWorld.step(1 / 60, dt, 3);
+
+			activeTickets.forEach(ticket => {
+				if (ticket.onRail) {
+					ticket.mesh.position.copy(getSlotPosition(ticket.slotIndex));
+				}
+			});
+
 			removeObjects();
 
 			if (!currSelect) {

@@ -42,6 +42,19 @@
 
 <body>
 
+	<div id="overlay">
+        <h1>oVRcooked!</h1>
+        <p>
+            <span class="time" style="color:red">Time Left:</span> 2:00 &nbsp;
+            <!-- <span class="key">B</span> Box &nbsp; -->
+            <!-- TODO: uncomment below once spawnR() is fully implemented -->
+            <!-- <span class="key">R</span> Rutgers R &nbsp; -->
+            <!-- <span class="key">C</span> Clear &nbsp; -->
+            <!-- <span class="key">D</span> Debug -->
+        </p>
+        <p id="score" style="color:#fffd6b">Score: 0</p>
+    </div>
+
 	<script type="importmap">
 			{
 				"imports": {
@@ -76,7 +89,7 @@
 		let kitchen, ingredientShelf, workstation, oven, ticketStation;
 		let rollingPin, doughBowl, sauceBowl, cheeseBowl;
 
-		let isDebugVisible = true;
+		let isDebugVisible = false;
 
 		let score = 0;
 
@@ -92,6 +105,10 @@
 		let nextTicketTime = 10 + Math.random() * 20;
 
 		const timer = new THREE.Timer();
+
+		let gameTimeRemaining = 600;
+		let timerCanvas, timerCtx, timerTexture;
+		let scoreCanvas, scoreCtx, scoreTexture;
 		const loader = new GLTFLoader();
 
 		const matBounce = new CANNON.Material('bouncy');
@@ -271,6 +288,8 @@
 			controller2.add(line.clone());
 
 			window.addEventListener('resize', onWindowResize, false);
+
+			initHUD();
 
 		}
 
@@ -623,7 +642,7 @@
 						}
 
 						score += 10;
-						document.getElementById('score').textContent = `Score: ${score}`;
+						updateScoreHUD();
 						console.log(`Score +10! Pizza delivered! Current score: ${score}.`);
 					}
 				});
@@ -710,7 +729,7 @@
 		function ticketSpawnCheck() {
 			if (timer.getElapsed() >= nextTicketTime) {
 				spawnTicket();
-				nextTicketTime = timer.getElapsed() + 10 + Math.random() * 20;
+				nextTicketTime = timer.getElapsed() + 5 + Math.random() * 20;
 			}
 		}
 
@@ -732,6 +751,67 @@
 			camera.add(ticket.mesh);
 			ticket.mesh.position.set(0.28, 0.18 - hudIndex * 0.08, -0.5);
 			ticket.mesh.rotation.set(0, 0, 0);
+		}
+
+		function makeHUDPlane(planeW, planeH, canvasW, canvasH) {
+			const canvas = document.createElement('canvas');
+			canvas.width = canvasW;
+			canvas.height = canvasH;
+			const ctx = canvas.getContext('2d');
+			const texture = new THREE.CanvasTexture(canvas);
+			const mesh = new THREE.Mesh(
+				new THREE.PlaneGeometry(planeW, planeH),
+				new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false })
+			);
+			mesh.renderOrder = 999;
+			return { mesh, canvas, ctx, texture };
+		}
+
+		function updateTimerHUD() {
+			const mins = Math.floor(gameTimeRemaining / 60);
+			const secs = Math.floor(gameTimeRemaining % 60);
+			timerCtx.clearRect(0, 0, timerCanvas.width, timerCanvas.height);
+			timerCtx.fillStyle = 'rgba(0,0,0,0.6)';
+			timerCtx.fillRect(0, 0, timerCanvas.width, timerCanvas.height);
+			timerCtx.fillStyle = '#ff6060';
+			timerCtx.font = 'bold 32px Courier New';
+			timerCtx.textAlign = 'left';
+			timerCtx.textBaseline = 'middle';
+			timerCtx.fillText(`Time: ${mins}:${secs.toString().padStart(2, '0')}`, 10, timerCanvas.height / 2);
+			timerTexture.needsUpdate = true;
+		}
+
+		function updateScoreHUD() {
+			scoreCtx.clearRect(0, 0, scoreCanvas.width, scoreCanvas.height);
+			scoreCtx.fillStyle = 'rgba(0,0,0,0.6)';
+			scoreCtx.fillRect(0, 0, scoreCanvas.width, scoreCanvas.height);
+			scoreCtx.fillStyle = '#fffd6b';
+			scoreCtx.font = 'bold 32px Courier New';
+			scoreCtx.textAlign = 'left';
+			scoreCtx.textBaseline = 'middle';
+			scoreCtx.fillText(`Score: ${score}`, 10, scoreCanvas.height / 2);
+			scoreTexture.needsUpdate = true;
+		}
+
+		function initHUD() {
+			const timerHUD = makeHUDPlane(0.18, 0.045, 256, 64);
+			timerCanvas  = timerHUD.canvas;
+			timerCtx     = timerHUD.ctx;
+			timerTexture = timerHUD.texture;
+			timerHUD.mesh.position.set(-0.33, 0.19, -0.5);
+			camera.add(timerHUD.mesh);
+
+			const scoreHUD = makeHUDPlane(0.15, 0.045, 192, 64);
+			scoreCanvas  = scoreHUD.canvas;
+			scoreCtx     = scoreHUD.ctx;
+			scoreTexture = scoreHUD.texture;
+			scoreHUD.mesh.position.set(-0.33, 0.12, -0.5);
+			camera.add(scoreHUD.mesh);
+
+			updateTimerHUD();
+			updateScoreHUD();
+
+			document.getElementById('overlay').style.display = 'none';
 		}
 
 		function findPhysicsObject(mesh) {
@@ -1438,6 +1518,12 @@
 
 			timer.update();
 			const dt = timer.getDelta();
+
+			if (gameTimeRemaining > 0) {
+				const prevSecs = Math.ceil(gameTimeRemaining);
+				gameTimeRemaining = Math.max(0, gameTimeRemaining - dt);
+				if (Math.ceil(gameTimeRemaining) !== prevSecs) updateTimerHUD();
+			}
 
             physicsWorld.step(1 / 60, dt, 3);
 

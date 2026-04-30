@@ -42,19 +42,6 @@
 
 <body>
 
-	<div id="overlay">
-        <h1>oVRcooked!</h1>
-        <p>
-            <span class="time" style="color:red">Time Left:</span> 2:00 &nbsp;
-            <!-- <span class="key">B</span> Box &nbsp; -->
-            <!-- TODO: uncomment below once spawnR() is fully implemented -->
-            <!-- <span class="key">R</span> Rutgers R &nbsp; -->
-            <!-- <span class="key">C</span> Clear &nbsp; -->
-            <!-- <span class="key">D</span> Debug -->
-        </p>
-        <p id="score" style="color:#fffd6b">Score: 0</p>
-    </div>
-
 	<script type="importmap">
 			{
 				"imports": {
@@ -137,7 +124,7 @@
 			camera.position.set(0, 2, 3);
 			scene.add(camera);
 
-			loader.load('./models/Kitchen2.glb', (gltf) => {
+			loader.load('./assets/Kitchen2.glb', (gltf) => {
 				kitchen = gltf.scene;
 
 				// 1. Scale the model template  
@@ -295,7 +282,7 @@
 
 		let flatDough, tomatoDough, cheeseDough, bakedPizza, cheese, tomato;
 		let flatDoughHalfExtents;
-		loader.load('./models/FlattenedDough.glb', (gltf) => {
+		loader.load('./assets/FlattenedDough.glb', (gltf) => {
 			flatDough = gltf.scene;
 
 			// 1. Scale the model template  
@@ -313,7 +300,7 @@
 			console.log("FlattenedDough.glb not found. Skipping.");
 		});
 
-		loader.load('./models/FlattenedDoughSauce.glb', (gltf) => {
+		loader.load('./assets/FlattenedDoughSauce.glb', (gltf) => {
 			tomatoDough = gltf.scene;
 
 			// 1. Scale the model template  
@@ -331,7 +318,7 @@
 			console.log("FlattenedDoughSauce.glb not found. Skipping.");
 		});
 
-		loader.load('./models/FlattenedDoughCheese.glb', (gltf) => {
+		loader.load('./assets/FlattenedDoughCheese.glb', (gltf) => {
 			cheeseDough = gltf.scene;
 
 			// 1. Scale the model template  
@@ -349,7 +336,7 @@
 			console.log("FlattenedDoughCheese.glb not found. Skipping.");
 		});
 
-		loader.load('./models/FlattenedDoughCheeseBaked.glb', (gltf) => {
+		loader.load('./assets/FlattenedDoughCheeseBaked.glb', (gltf) => {
 			bakedPizza = gltf.scene;
 
 			// 1. Scale the model template  
@@ -367,7 +354,7 @@
 			console.log("FlattenedDoughCheeseBaked.glb not found. Skipping.");
 		});
 
-		loader.load('./models/ProceduralCheese.glb', (gltf) => {
+		loader.load('./assets/ProceduralCheese.glb', (gltf) => {
 			cheese = gltf.scene;
 
 			// 1. Scale the model template  
@@ -385,7 +372,7 @@
 			console.log("Cheese.glb not found. Skipping.");
 		});
 
-		loader.load('./models/Tomato.glb', (gltf) => {
+		loader.load('./assets/Tomato.glb', (gltf) => {
 			tomato = gltf.scene;
 
 			// 1. Scale the model template  
@@ -404,7 +391,7 @@
 		});
 
 		function loadIngredientShelf() {
-			loader.load('./models/IngredientShelf.glb', (gltf) => {
+			loader.load('./assets/IngredientShelf.glb', (gltf) => {
 				ingredientShelf = gltf.scene;
 
 				// 1. Scale the model template  
@@ -449,7 +436,7 @@
 		}
 
 		function loadWorkstation() {
-			loader.load('./models/Workstation.glb', (gltf) => {
+			loader.load('./assets/Workstation.glb', (gltf) => {
 				workstation = gltf.scene;
 
 				// 1. Scale the model template  
@@ -501,7 +488,7 @@
 		}
 
 		function loadOven() {
-			loader.load('./models/Oven.glb', (gltf) => {
+			loader.load('./assets/Oven.glb', (gltf) => {
 				oven = gltf.scene;
 
 				// 1. Scale the model template  
@@ -576,7 +563,7 @@
 		}
 
 		function loadTicketStation() {
-			loader.load('./models/TicketStation.glb', (gltf) => {
+			loader.load('./assets/TicketStation.glb', (gltf) => {
 				ticketStation = gltf.scene;
 
 				// 1. Scale the model template  
@@ -810,8 +797,6 @@
 
 			updateTimerHUD();
 			updateScoreHUD();
-
-			document.getElementById('overlay').style.display = 'none';
 		}
 
 		function findPhysicsObject(mesh) {
@@ -1153,7 +1138,7 @@
 		}
 
 		function createRollingPin() {
-			loader.load('./models/RollingPin.glb', (gltf) => {
+			loader.load('./assets/RollingPin.glb', (gltf) => {
 				rollingPin = gltf.scene;
 
 				// 1. Scale the model template  
@@ -1208,7 +1193,7 @@
 		}
 
 		function createDoughBowl() {
-			loader.load('./models/DoughBowl.glb', (gltf) => {
+			loader.load('./assets/DoughBowl.glb', (gltf) => {
 				doughBowl = gltf.scene;
 
 				// 1. Scale the model template  
@@ -1254,7 +1239,7 @@
 		}
 
 		function createSauceBowl() {
-			loader.load('./models/SauceBowl.glb', (gltf) => {
+			loader.load('./assets/SauceBowl.glb', (gltf) => {
 				sauceBowl = gltf.scene;
 
 				// 1. Scale the model template  
@@ -1299,7 +1284,7 @@
 		}
 
 		function createCheeseBowl() {
-			loader.load('./models/CheeseBowl.glb', (gltf) => {
+			loader.load('./assets/CheeseBowl.glb', (gltf) => {
 				cheeseBowl = gltf.scene;
 
 				// 1. Scale the model template  

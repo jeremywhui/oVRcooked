@@ -6,4 +6,5 @@ To run this application, either visit the [GitHub Page](https://jeremywhui.githu
 2. Open `index.html` using the VS Code Live Server extension in Google Chrome.
 3. Ensure the Immersive Web Emulator extension is enabled, and press the "Enable WebXR" button.
 4. Press the play button to enter VR mode.
-5. Remember that squeezing (right clicking in the emulator) on a bowl spawns an ingredient, and selecting (left clicking in the emulator) will drag an ingredient. Enjoy playing!
+5. To assemble a pizza first grab a dough ball and flatten it with the rolling pin, then grab a tomato and put it on, then grab the cheese block and put it on. Finally, bring the pizza to the "In" part of the oven, and take the baked pizza to the ticket station to earn points.
+6. Remember that squeezing (right clicking in the emulator) on a bowl spawns an ingredient, and selecting (left clicking in the emulator) will drag an ingredient. Enjoy playing!

@@ -126,11 +126,9 @@
 
 			loader.load('./assets/Kitchen2.glb', (gltf) => {
 				kitchen = gltf.scene;
-
-				// 1. Scale the model template  
+  
 				kitchen.scale.set(0.5, 0.5, 0.5);
 
-				// 2. Enable Shadows
 				kitchen.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
@@ -236,7 +234,7 @@
 			// Load items into the game
 			createRollingPin();
 
-			// controllers
+			// Controllers
 			controller1 = renderer.xr.getController(0);
 			controller1.addEventListener('selectstart', onSelectStart);
 			controller1.addEventListener('selectend', onSelectEnd);
@@ -285,10 +283,8 @@
 		loader.load('./assets/FlattenedDough.glb', (gltf) => {
 			flatDough = gltf.scene;
 
-			// 1. Scale the model template  
 			flatDough.scale.set(0.25, 0.25, 0.25);
 
-			// 2. Enable Shadows
 			flatDough.traverse((child) => {
 				if (child.isMesh) {
 					child.castShadow = true;
@@ -303,10 +299,8 @@
 		loader.load('./assets/FlattenedDoughSauce.glb', (gltf) => {
 			tomatoDough = gltf.scene;
 
-			// 1. Scale the model template  
 			tomatoDough.scale.set(0.25, 0.25, 0.25);
 
-			// 2. Enable Shadows
 			tomatoDough.traverse((child) => {
 				if (child.isMesh) {
 					child.castShadow = true;
@@ -321,10 +315,8 @@
 		loader.load('./assets/FlattenedDoughCheese.glb', (gltf) => {
 			cheeseDough = gltf.scene;
 
-			// 1. Scale the model template  
 			cheeseDough.scale.set(0.25, 0.25, 0.25);
 
-			// 2. Enable Shadows
 			cheeseDough.traverse((child) => {
 				if (child.isMesh) {
 					child.castShadow = true;
@@ -339,10 +331,8 @@
 		loader.load('./assets/FlattenedDoughCheeseBaked.glb', (gltf) => {
 			bakedPizza = gltf.scene;
 
-			// 1. Scale the model template  
 			bakedPizza.scale.set(0.25, 0.25, 0.25);
 
-			// 2. Enable Shadows
 			bakedPizza.traverse((child) => {
 				if (child.isMesh) {
 					child.castShadow = true;
@@ -357,10 +347,8 @@
 		loader.load('./assets/ProceduralCheese.glb', (gltf) => {
 			cheese = gltf.scene;
 
-			// 1. Scale the model template  
 			cheese.scale.set(0.1, 0.1, 0.1);
 
-			// 2. Enable Shadows
 			cheese.traverse((child) => {
 				if (child.isMesh) {
 					child.castShadow = true;
@@ -375,10 +363,8 @@
 		loader.load('./assets/Tomato.glb', (gltf) => {
 			tomato = gltf.scene;
 
-			// 1. Scale the model template  
 			tomato.scale.set(0.1, 0.1, 0.1);
 
-			// 2. Enable Shadows
 			tomato.traverse((child) => {
 				if (child.isMesh) {
 					child.castShadow = true;
@@ -394,7 +380,6 @@
 			loader.load('./assets/IngredientShelf.glb', (gltf) => {
 				ingredientShelf = gltf.scene;
 
-				// 1. Scale the model template  
 				ingredientShelf.scale.set(0.5, 0.5, 0.5);
 				const pos = {
 					x: 0,
@@ -404,19 +389,16 @@
 				ingredientShelf.position.set(pos.x, pos.y, pos.z);
 				ingredientShelf.rotation.set(0, Math.PI / 2, 0);
 
-				// 2. Enable Shadows
 				ingredientShelf.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(ingredientShelf);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
 
 				const ingredientShelfBody = new CANNON.Body({
@@ -439,7 +421,6 @@
 			loader.load('./assets/Workstation.glb', (gltf) => {
 				workstation = gltf.scene;
 
-				// 1. Scale the model template  
 				workstation.scale.set(0.5, 0.5, 0.5);
 				const pos = {
 					x: -3.5,
@@ -448,19 +429,16 @@
 				};
 				workstation.position.set(pos.x, pos.y, pos.z);
 
-				// 2. Enable Shadows
 				workstation.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(workstation);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2 - 0.35, size.z / 2);
 
 				const workstationBody = new CANNON.Body({
@@ -491,7 +469,6 @@
 			loader.load('./assets/Oven.glb', (gltf) => {
 				oven = gltf.scene;
 
-				// 1. Scale the model template  
 				oven.scale.set(0.5, 0.5, 0.5);
 				const pos = {
 					x: 4,
@@ -501,19 +478,16 @@
 				oven.position.set(pos.x, pos.y, pos.z);
 				oven.rotation.set(0, Math.PI, 0);
 
-				// 2. Enable Shadows
 				oven.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(oven);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2.4);
 
 				const ovenBody = new CANNON.Body({
@@ -566,7 +540,6 @@
 			loader.load('./assets/TicketStation.glb', (gltf) => {
 				ticketStation = gltf.scene;
 
-				// 1. Scale the model template  
 				ticketStation.scale.set(0.5, 0.5, 0.5);
 				const pos = {
 					x: 0,
@@ -576,19 +549,16 @@
 				ticketStation.position.set(pos.x, pos.y, pos.z);
 				ticketStation.rotation.set(0, -Math.PI/2, 0);
 
-				// 2. Enable Shadows
 				ticketStation.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(ticketStation);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2 - 0.3, size.y / 4 - 0.05, size.z / 2);
 
 				const ticketStationBody = new CANNON.Body({
@@ -819,7 +789,6 @@
 			// Physics Body for Sphere
 			const sphereBody = new CANNON.Body({
 				mass: 1,
-				// Need to set to the size of the radius: 0.6 --> radius
 				shape: new CANNON.Sphere(radius),
 				material: matBounce
 			});
@@ -886,10 +855,8 @@
 			cheeseMesh.position.set(pos.x, pos.y, pos.z);
 			cheeseMesh.castShadow = true;
 
-			// Physics Body for Sphere
 			const cheeseBody = new CANNON.Body({
 				mass: 1,
-				// Need to set to the size of the radius: 0.6 --> radius
 				shape: new CANNON.Box(new CANNON.Vec3(0.1, 0.1, 0.2)),
 				material: matBounce
 			});
@@ -930,10 +897,8 @@
 			tomatoMesh.position.set(pos.x, pos.y, pos.z);
 			tomatoMesh.castShadow = true;
 
-			// Physics Body for Sphere
 			const tomatoBody = new CANNON.Body({
 				mass: 1,
-				// Need to set to the size of the radius: 0.6 --> radius
 				shape: new CANNON.Sphere(0.1),
 				material: matBounce
 			});
@@ -979,7 +944,6 @@
 			const index = objects.indexOf(cheeseDoughObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.03;
 
@@ -991,7 +955,6 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({
@@ -1010,19 +973,15 @@
 		function addCheese(tomatoDoughObj) {
 			const { mesh, body } = tomatoDoughObj;
 
-			// Save transform
 			const position = body.position.clone();
 
-			// Remove old pizza
 			physicsWorld.removeBody(body);
 			scene.remove(mesh);
 			group.remove(mesh);
 
-			// Remove from objects array
 			const index = objects.indexOf(tomatoDoughObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.03;
 
@@ -1034,7 +993,6 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({
@@ -1053,19 +1011,15 @@
 		function addTomato(doughObj) {
 			const { mesh, body } = doughObj;
 
-			// Save transform
 			const position = body.position.clone();
 
-			// Remove old pizza
 			physicsWorld.removeBody(body);
 			scene.remove(mesh);
 			group.remove(mesh);
 
-			// Remove from objects array
 			const index = objects.indexOf(doughObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.03;
 
@@ -1077,7 +1031,6 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({
@@ -1108,7 +1061,6 @@
 			const index = objects.indexOf(sphereObj);
 			if (index !== -1) objects.splice(index, 1);
 
-			// Create cylinder mesh
 			const radius = 0.25;
 			const height = 0.03;
 
@@ -1120,7 +1072,6 @@
 			scene.add(cylinderMesh);
 			group.add(cylinderMesh);
 
-			// Create cylinder body
 			const cylinderShape = new CANNON.Cylinder(radius, radius, height, 16);
 
 			const cylinderBody = new CANNON.Body({
@@ -1141,12 +1092,9 @@
 			loader.load('./assets/RollingPin.glb', (gltf) => {
 				rollingPin = gltf.scene;
 
-				// 1. Scale the model template  
 				rollingPin.scale.set(0.1, 0.1, 0.1);
 				rollingPin.position.set(-4.25, 2.05, 1);
 				
-
-				// 2. Enable Shadows
 				rollingPin.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
@@ -1196,7 +1144,6 @@
 			loader.load('./assets/DoughBowl.glb', (gltf) => {
 				doughBowl = gltf.scene;
 
-				// 1. Scale the model template  
 				doughBowl.scale.set(0.2, 0.2, 0.2);
 				const pos = {
 					x: 1,
@@ -1206,19 +1153,16 @@
 				doughBowl.position.set(pos.x, pos.y, pos.z);
 				doughBowl.rotation.set(0, Math.PI / 2, 0);
 
-				// 2. Enable Shadows
 				doughBowl.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(doughBowl);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
 
 				const doughBowlBody = new CANNON.Body({
@@ -1242,7 +1186,6 @@
 			loader.load('./assets/SauceBowl.glb', (gltf) => {
 				sauceBowl = gltf.scene;
 
-				// 1. Scale the model template  
 				sauceBowl.scale.set(0.2, 0.2, 0.2);
 				const pos = {
 					x: 0,
@@ -1252,19 +1195,16 @@
 				sauceBowl.position.set(pos.x, pos.y, pos.z);
 				sauceBowl.rotation.set(0, Math.PI / 2, 0);
 
-				// 2. Enable Shadows
 				sauceBowl.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(sauceBowl);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
 
 				const sauceBowlBody = new CANNON.Body({
@@ -1287,7 +1227,6 @@
 			loader.load('./assets/CheeseBowl.glb', (gltf) => {
 				cheeseBowl = gltf.scene;
 
-				// 1. Scale the model template  
 				cheeseBowl.scale.set(0.2, 0.2, 0.2);
 				const pos = {
 					x: -1,
@@ -1297,19 +1236,16 @@
 				cheeseBowl.position.set(pos.x, pos.y, pos.z);
 				cheeseBowl.rotation.set(0, Math.PI / 2, 0);
 
-				// 2. Enable Shadows
 				cheeseBowl.traverse((child) => {
 					if (child.isMesh) {
 						child.castShadow = true;
 					}
 				});
 
-				// 3. Calculate bounding box of the scaled model
 				const box = new THREE.Box3().setFromObject(cheeseBowl);
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-				// 4. Store the correct physics extents (half-sizes)
 				let halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
 
 				const cheeseBowlBody = new CANNON.Body({
@@ -1482,7 +1418,6 @@
 		function removeObjects() {
 			for (let i = objects.length - 1; i >= 0; i--) {
 				const obj = objects[i];
-
 				if (obj.toRemove) {
 					physicsWorld.removeBody(obj.body);
 					scene.remove(obj.mesh);
@@ -1523,7 +1458,6 @@
 			if (!currSelect) {
 				objects.forEach(obj => {
 					obj.mesh.position.copy(obj.body.position);
-					// Need to sync the quaternion
 					obj.mesh.quaternion.copy(obj.body.quaternion);
 				});
 			}
